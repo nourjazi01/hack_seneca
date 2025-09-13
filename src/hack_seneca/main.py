@@ -2,6 +2,7 @@
 import sys
 import os
 import warnings
+import re
 from collections import deque
 
 # Add the current directory to Python path
@@ -16,9 +17,38 @@ except ImportError as e:
 
 warnings.filterwarnings("ignore")
 
+def login():
+    """Authenticate user with user ID"""
+    print("🔐 Login Required")
+    print("=" * 30)
+    print("Please enter your user ID (format: user_00001)")
+    print("=" * 30)
+    
+    while True:
+        try:
+            user_id = input("User ID: ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print("\n❌ Login cancelled. Goodbye!")
+            sys.exit(0)
+        
+        if not user_id:
+            print("❌ User ID cannot be empty. Please try again.")
+            continue
+        
+        # Validate user ID format: user_XXXXX (where X is any digit)
+        if re.match(r'^user_\d{5}$', user_id):
+            print(f"✅ Login successful! Welcome, {user_id}")
+            return user_id
+        else:
+            print("❌ Invalid format. Please use format: user_00001 (user_ followed by 5 digits)")
+            print("Examples: user_00001, user_12345, user_99999")
+
 def chat():
     """Start the conversational fitness chatbot"""
-    print("🏋️‍♂️ Fitness Chatbot Activated!")
+    # Authenticate user first
+    user_id = login()
+    
+    print("\n🏋️‍♂️ Fitness Chatbot Activated!")
     print("=" * 50)
     
     print("\n⚡ Initializing fitness assistant...")
@@ -60,6 +90,7 @@ def chat():
         inputs = {
             "user_message": user_input,
             "context": recent_context,
+            "user_id": user_id,
         }
 
         try:
