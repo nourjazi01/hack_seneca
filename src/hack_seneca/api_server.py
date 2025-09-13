@@ -107,6 +107,24 @@ async def api_chat(request: ChatRequest):
         
         print(f"🤖 Starting CrewAI chat for user: {request.user_id}")
         print(f"💬 User message: {request.message}")
+
+        # Lightweight intent guard: if it's just a greeting, respond directly without invoking CrewAI
+        text = (request.message or "").strip().lower()
+        # Normalize punctuation and extra spaces
+        text_clean = re.sub(r"[^a-z\s]", "", text)
+        greetings = {
+            "hi", "hello", "hey", "yo", "sup", "hej", "hola", "salut",
+            "good morning", "good afternoon", "good evening"
+        }
+        # Consider it a greeting if it's short and composed of greeting words only
+        if text_clean and (len(text_clean.split()) <= 4) and all(
+            any(g in w for g in greetings) for w in text_clean.split()
+        ):
+            user_name = current_user_data.get("profile", {}).get("name", "there")
+            reply = (
+                f"Hi {user_name}! 👋 What would you like help with today — a workout plan, nutrition guidance (like meal ideas), or something else?"
+            )
+            return ChatResponse(response=reply, timestamp=datetime.now())
         
         # Initialize the CrewAI fitness coach
         fitness_crew = FitnessCrew()

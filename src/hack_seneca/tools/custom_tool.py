@@ -54,7 +54,7 @@ class FluxImageGenerator(BaseTool):
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {flux_api_key}"
             }
-            
+            print(f"prompt: {prompt}")
             # Create a clean, professional prompt
             safe_prompt = f"A clean, professional fitness-related image: {prompt}"
             

@@ -7,14 +7,18 @@ import json
 from collections import deque
 from datetime import datetime, timedelta
 
-# Add the current directory to Python path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# Ensure src/ is on the path when running this file directly (python src/hack_seneca/main.py)
+_here = os.path.dirname(os.path.abspath(__file__))
+_src_dir = os.path.dirname(_here)  # .../src
+if _src_dir not in sys.path:
+    sys.path.insert(0, _src_dir)
 
 try:
-    from crew import FitnessCrew
+    # Import via the package so relative imports inside modules work
+    from hack_seneca.crew import FitnessCrew
 except ImportError as e:
     print(f"Error: Could not import required modules: {e}")
-    print("Make sure all files are in the same directory")
+    print("Tip: Run with 'python -m hack_seneca.main --interactive' from the project root, or use 'uv run run_crew'.")
     sys.exit(1)
 
 warnings.filterwarnings("ignore")
@@ -244,5 +248,27 @@ def chat():
             print("Please check your API keys and try again.")
             break
 
-if __name__ == "__main__":
+def run():
+    """Console entry point used by pyproject scripts (run_crew, hack_seneca)."""
+    # For now we simply start the interactive chat flow
     chat()
+
+
+def train():
+    """Placeholder to satisfy pyproject script; extend as needed."""
+    print("Train stub: No training routine implemented.")
+
+
+def replay():
+    """Placeholder to satisfy pyproject script; extend as needed."""
+    print("Replay stub: No replay routine implemented.")
+
+
+def test():
+    """Placeholder to satisfy pyproject script; extend as needed."""
+    print("Test stub: No tests implemented.")
+
+
+if __name__ == "__main__":
+    # Keep compatibility with direct script execution
+    run()

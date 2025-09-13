@@ -35,9 +35,16 @@ class FitnessCrew:
                 api_key=api_key,
                 base_url=base_url,
                 api_version=api_version,
+                temperature=0.1
             )
         
+        # Tools
         self.flux_tool = FluxImageGenerator()
+
+        # Instantiate and reuse agent instances across tasks/crew
+        self.manager_agent = self.create_manager_agent()
+        self.fitness_agent = self.create_fitness_coach_agent()
+        self.nutritionist_agent = self.create_nutritionist_agent()
 
     def create_manager_agent(self):
         """Manager agent that delegates to appropriate specialists"""
@@ -61,14 +68,16 @@ class FitnessCrew:
                 "- WORKOUT PLANS = FITNESS COACH (this is exercise)\n"
                 "- NEVER let fitness coach answer nutrition questions\n"
                 "- NEVER let nutritionist answer workout questions\n"
-                "- You do NOT answer directly - you ONLY delegate\n\n"
+                "- If the user's message is a simple greeting or the intent is unclear, FIRST ask a brief clarifying question (e.g., 'Are you looking for a workout plan, nutrition guidance, or something else?') and DO NOT delegate until clarified.\n"
+                "- You typically do not answer domain questions directly — you delegate to the right specialist once intent is clear.\n\n"
                 
                 "When delegating, simply say: 'I'm delegating this [nutrition/fitness] request to our specialist.'"
             ),
             llm=self.llm,
             verbose=True,
-            memory=False,  # Disable memory to prevent wrong delegation patterns
-            allow_delegation=True,  # Critical for hierarchical process
+            memory=True,  # Disable memory to prevent wrong delegation patterns
+            allow_delegation=True,
+            reasoning=True
         )
 
     def create_fitness_coach_agent(self):
@@ -166,7 +175,8 @@ class FitnessCrew:
                 "2. For meal suggestions, give 1-3 specific recipes with ingredients and macros\n"
                 "3. AUTOMATICALLY generate a meal image using FluxImageGenerator for ANY meal suggestion\n"
                 "4. When calling FluxImageGenerator, describe the meal in detail (plating, colors, presentation)\n"
-                "5. Keep responses focused and practical\n\n"
+                "5. Keep responses focused and practical\n"
+                "6. If the user's request is NOT about meals, food, diet, pasta, nutrition, or recipes, reply 'Not applicable' and DO NOT generate images.\n\n"
                 
                 "For image generation:\n"
                 "- Create detailed, appetizing descriptions\n"
@@ -175,7 +185,27 @@ class FitnessCrew:
                 "- Images should be saved under assets/images/ with timestamped filename"
             ),
             expected_output="Concise nutrition guidance with specific meal suggestions and generated meal images when applicable",
-            agent=self.create_nutritionist_agent(),
+            agent=self.nutritionist_agent,
+        )
+
+    def create_fitness_task(self):
+        """Create the fitness task for workout and exercise requests"""
+        return Task(
+            description=(
+                "Provide a complete workout plan for: {user_message}\n\n"
+                "USER PROFILE & DATA:\n"
+                "User ID: {user_id}\n"
+                "Profile: {user_profile}\n"
+                "Recent Activities: {user_activities}\n"
+                "Body Measurements: {user_measurements}\n"
+                "Context: {context}\n\n"
+                "Instructions:\n"
+                "1. If the request is about workouts, provide a structured plan with exercises, sets, reps, and rest.\n"
+                "2. Include 1-2 progression guidelines and safety/form notes.\n"
+                "3. If the request is about meals, nutrition, recipes, or pasta, reply 'Not applicable' and DO NOT answer."
+            ),
+            expected_output="A clear, structured workout plan or 'Not applicable' if the request is not fitness-related.",
+            agent=self.fitness_agent,
         )
 
     def create_main_task(self):
@@ -222,23 +252,25 @@ class FitnessCrew:
                 "This should be either a detailed workout plan (from fitness coach) or complete "
                 "nutrition guidance (from nutritionist), tailored to the user's data and goals."
             ),
-            agent=self.create_manager_agent(),
+            agent=self.manager_agent,
         )
 
     def chat_crew(self):
         """Create hierarchical crew with manager delegation"""
+        # Only include the main manager task; the manager will delegate to specialists as needed.
         return Crew(
             agents=[
-                self.create_manager_agent(),
-                self.create_fitness_coach_agent(),
-                self.create_nutritionist_agent()
+                self.manager_agent,
+                self.fitness_agent,
+                self.nutritionist_agent,
             ],
             tasks=[
                 self.create_main_task(),
-                self.create_nutritionist_task()
+                self.create_fitness_task(),
+                self.create_nutritionist_task(),
             ],
-            process=Process.hierarchical,  # Key change: hierarchical instead of sequential
-            manager_llm=self.llm,  # Manager needs its own LLM
+            process=Process.hierarchical,
+            manager_llm=self.llm,
             verbose=True,
-            memory=True,
+            memory=True,  # Disable Crew memory to avoid LiteLLM/Azure memory errors
         )
