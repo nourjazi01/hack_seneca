@@ -2,7 +2,7 @@ from crewai import Agent, Crew, Process, Task
 from crewai.llm import LLM
 import os
 from dotenv import load_dotenv
-from tools.custom_tool import FluxImageGenerator
+from .tools.custom_tool import FluxImageGenerator
 
 load_dotenv()
 
@@ -16,10 +16,20 @@ class FitnessCrew:
         base_url = os.getenv("AZURE_AI_ENDPOINT")
         api_version = os.getenv("AZURE_AI_API_VERSION")
         
+        print(f"🔧 Configuring Azure LLM:")
+        print(f"   Model: {model}")
+        print(f"   Base URL: {base_url}")
+        print(f"   API Version: {api_version}")
+        print(f"   API Key: {'✅ Set' if api_key else '❌ Missing'}")
+        
         if not api_key or not base_url:
             print("Warning: Azure AI API credentials not found in environment variables.")
+            # Set a dummy OpenAI key to satisfy CrewAI validation
+            os.environ["OPENAI_API_KEY"] = "dummy-key-for-azure"
             self.llm = LLM(model="gpt-3.5-turbo")
         else:
+            # Set a dummy OpenAI key to satisfy CrewAI validation even when using Azure
+            os.environ["OPENAI_API_KEY"] = "dummy-key-for-azure"
             self.llm = LLM(
                 model=model,
                 api_key=api_key,
