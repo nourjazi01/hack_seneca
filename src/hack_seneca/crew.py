@@ -38,16 +38,25 @@ class FitnessCrew:
         return Task(
             description=(
                 "Respond to the user's message: {user_message}\n\n"
+                "User ID: {user_id}\n\n"
+                "USER PROFILE & FITNESS DATA:\n"
+                "Profile: {user_profile}\n"
+                "Recent Activities: {user_activities}\n"
+                "Body Measurements: {user_measurements}\n"
+                "Nutrition Intake: {user_nutrition}\n\n"
                 "Conversation History (for context):\n{context}\n\n"
-                "Use this history to maintain context and provide consistent responses. "
-                "If the user asks about workouts, provide structured plans with sets/reps guidance. "
-                "Ask clarifying questions when needed but keep them brief. "
-                "Always prioritize safety and suggest professional consultation for health concerns."
+                "IMPORTANT: Use the user's specific fitness data above to provide highly personalized advice. "
+                "Always reference their fitness level, goals, recent activities, and measurements when relevant. "
+                "DO NOT ask for information that is already provided in their profile data. "
+                "If the user asks about workouts, provide structured plans tailored to their specific fitness level and goals. "
+                "Reference their recent progress, measurements, or activity patterns to show you understand their current state. "
+                "Keep responses focused and actionable. Prioritize safety and suggest professional consultation for health concerns."
             ),
             expected_output=(
-                "A concise, friendly, and actionable response tailored to the user's fitness query. "
-                "If providing workout plans, use clear formatting with bullet points or numbers. "
-                "Keep responses under 3-4 sentences when possible."
+                "A highly personalized, friendly, and actionable response that clearly demonstrates knowledge of the user's "
+                "specific fitness data. Always reference relevant data points (fitness level, goals, recent activities, measurements) "
+                "when providing recommendations. If providing workout plans, use clear formatting and adjust difficulty based on "
+                "their specific fitness level and goals. Keep responses concise but personalized."
             ),
             agent=self.create_assistant_agent(),
         )
